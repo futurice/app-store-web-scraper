@@ -15,7 +15,7 @@ class AppStore(Base):
         self,
         country,
         app_name,
-        app_id=None,
+        app_id,
         log_format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
         log_level="INFO",
         log_interval=5,

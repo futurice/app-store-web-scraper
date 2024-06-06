@@ -31,7 +31,7 @@ class Base:
         self,
         country,
         app_name,
-        app_id=None,
+        app_id,
         log_format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
         log_level="INFO",
         log_interval=5,
@@ -42,9 +42,6 @@ class Base:
 
         self.country = str(country).lower()
         self.app_name = re.sub(r"[\W_]+", "-", str(app_name).lower())
-        if app_id is None:
-            logger.info("Searching for app id")
-            app_id = self.search_id()
         self.app_id = int(app_id)
 
         self.url = self._landing_url()
@@ -167,13 +164,6 @@ class Base:
         if time.time() - self._log_timer > interval:
             self._log_status()
             self._log_timer = 0
-
-    def search_id(self):
-        search_url = "https://www.google.com/search"
-        self._get(search_url, params={"q": f"app store {self.app_name}"})
-        pattern = fr"{self._base_landing_url}/[a-z]{{2}}/.+?/id([0-9]+)"
-        app_id = re.search(pattern, self._response.text).group(1)
-        return app_id
 
     def review(self, how_many=sys.maxsize, after=None, sleep=None):
         self._log_timer = 0

@@ -41,11 +41,7 @@ class TestEmptyApp:
 
 
 class TestAppStore:
-    app = AppStore(country="us", app_name="minecraft")
-
-    def test_search_id(self):
-        self.app.search_id()
-        assert self.app.app_id == 479516143
+    app = AppStore(country="us", app_name="minecraft", app_id=479516143)
 
     def test_review(self):
         self.app.review(how_many=3)
@@ -77,11 +73,7 @@ class TestAppStore:
 
 
 class TestPodcast:
-    podcast = Podcast(country="us", app_name="stuff you should know")
-
-    def test_search_id(self):
-        self.podcast.search_id()
-        assert self.podcast.app_id == 278981407
+    podcast = Podcast(country="us", app_name="stuff you should know", app_id=278981407)
 
     def test_review(self):
         self.podcast.review(how_many=3)
