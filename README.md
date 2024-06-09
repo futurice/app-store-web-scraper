@@ -1,134 +1,146 @@
-![build](https://img.shields.io/github/workflow/status/cowboy-bebug/app-store-scraper/Build)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/cowboy-bebug/app-store-scraper/pulls)
-[![PyPI](https://img.shields.io/pypi/v/app-store-scraper)](https://pypi.org/project/app-store-scraper/)
-![downloads](https://img.shields.io/pypi/dm/app-store-scraper)
-![license](https://img.shields.io/pypi/l/app-store-scraper)
-![code style](https://img.shields.io/badge/code%20style-black-black)
+# 🍏🔍 App Store Web Scraper
 
-```
-   ___                _____ _                   _____
-  / _ \              /  ___| |                 /  ___|
- / /_\ \_ __  _ __   \ `--.| |_ ___  _ __ ___  \ `--.  ___ _ __ __ _ _ __   ___ _ __
- |  _  | '_ \| '_ \   `--. \ __/ _ \| '__/ _ \  `--. \/ __| '__/ _` | '_ \ / _ \ '__|
- | | | | |_) | |_) | /\__/ / || (_) | | |  __/ /\__/ / (__| | | (_| | |_) |  __/ |
- \_| |_/ .__/| .__/  \____/ \__\___/|_|  \___| \____/ \___|_|  \__,_| .__/ \___|_|
-       | |   | |                                                    | |
-       |_|   |_|                                                    |_|
-```
+`app-store-web-scraper` is a Python package for extracting reviews for iOS,
+iPadOS, macOS and tvOS apps from the web version of Apple's App Store.
+> __Note:__ Whenever possible, prefer using Apple's [App Store Connect
+> API][connect], which provides the full set of customer review data for your
+> apps and is more reliable.
 
-# Quickstart
+[connect]: https://developer.apple.com/app-store-connect/api/
 
-Install:
-```console
-pip3 install app-store-scraper
+## Installation
+
+At the moment, this package not yet available on PyPI, but can be installed
+directly from GitHub as a source package:
+
+```sh
+pip install app-store-web-scraper
 ```
 
-Scrape reviews for an app:
+## Basic Usage
+
+The sample code below fetches the 10 most recent app reviews for
+[Minecraft][minecraft].
+
 ```python
-from app_store_scraper import AppStore
-from pprint import pprint
+from app_store_web_scraper import AppStoreEntry
 
-minecraft = AppStore(country="nz", app_name="minecraft")
-minecraft.review(how_many=20)
+# See below for instructions on finding an app's ID.
+MINECRAFT_APP_ID = 479516143
 
-pprint(minecraft.reviews)
-pprint(minecraft.reviews_count)
+# Look up the app in the British version of the App Store.
+app = AppStoreEntry(app_id=MINECRAFT_APP_ID, country="gb")
+
+# Iterate over the app's reviews, which are fetched lazily in batches.
+for review in app.reviews(limit=10):
+    print("-----")
+    print("ID:", review.id)
+    print("Rating:", review.rating)
+    print("Review:", review.review)
 ```
 
-Scrape reviews for a podcast:
+[minecraft]: https://apps.apple.com/gb/app/multicraft-build-and-mine/id1174039276
+
+### App IDs
+
+`app-store-web-scraper` requires you to pass the App Store ID of the app(s) you
+are interested in. To find an app's ID, find out its App Store page URL by
+searching for the app on [apple.com][apple] or in the App Store app (use
+_Share_ → _Copy Link_). The ID is the last part of the URL's path, without the
+"id" prefix.
+
+For example, the URL of the Minecraft app (on the British App Store) is
+`https://apps.apple.com/gb/app/multicraft-build-and-mine/id1174039276`,
+from which one can extract the app ID `1174039276`.
+
+[apple]: https://www.apple.com/
+
+### `AppStoreEntry`
+
+To start scraping an app in the App Store, create an `AppStoreEntry` instance
+with an app ID and the (lowercase) ISO code of the country whose App Store
+should be scraped. If the app ID is invalid or the app is not available in the
+specified region, an `AppNotFound` error is raised.
+
+The entry's `reviews()` method returns an iterator that can be used to fetch
+some or all of the app reviews available through the App Store's public API.
+Note that this is usually only a small subset of all reviews that the app
+received, so the number of reviews retrieved will not match the review count
+displayed on the App Store page.
+
+### `AppReview`
+
+Each review is returned as an `AppReview` object with the following attributes:
+
+- `id`
+- `date`
+- `user_name`
+- `rating`
+- `title`
+- `review`
+- `developer_response` (if the developer replied)
+  - `id`
+  - `body`
+  - `modified`
+
+
+The list of reviews split into pages by the App Store's servers, so iterating
+over all reviews will regularly make a network request to fetch the next page.
+To limit the total amount of network requests, you can pass a `limit` to
+`reviews()` so that only a certain maximum amount of app reviews is returned by
+the iterator. By default, no limit is set.
+
+## Advanced Usage
+
+### `AppStoreSession`
+
+The `AppStoreSession` class implements the communication with the App Store's
+servers. Internally, it uses an [`urllib3.PoolManager`][urllib3-pool] the reuse
+HTTP connections between requests, which reduces the load on Apple's servers
+and increases performance.
+
+By default, `AppStoreEntry` takes care of creating an `AppStoreSession` itself,
+so you don't need to deal with sessions for simple use cases. However, constructing
+and passing an `AppStoreSession` manually allows you to share a session between
+multiple `AppStoreEntry` objects, to further increase efficiency:
+
 ```python
-from app_store_scraper import Podcast
-from pprint import pprint
+from app_store_web_scraper import AppStoreEntry, AppStoreSession
 
-sysk = Podcast(country="nz", app_name="stuff you should know")
-sysk.review(how_many=20)
+session = AppStoreSession()
 
-pprint(sysk.reviews)
-pprint(sysk.reviews_count)
+pages = AppStoreEntry(app_id=361309726, country="de", session=session)
+numbers = AppStoreEntry(app_id=361304891, country="de", session=session)
+
+# ...
 ```
 
-# Extra Details
+[urllib3-pool]: https://urllib3.readthedocs.io/en/stable/reference/urllib3.poolmanager.html
 
-Let's continue from the code example used in [Quickstart](#quickstart).
+### How It Works
 
+The App Store Preview on the web (`https://apps.apple.com/...`) is implemented
+as a single-page application based on [Ember.js][ember]. It fetches all data
+from an API at `https://amp-api-edge.apps.apple.com/v1`. The authentication
+token for this API is delivered to the web app in the form of a `<meta>` HTML
+tag that is embedded into the initial HTML content of the page.
 
-## Instantiation
+`app-store-web-scraper` first requests the App Store page of the app in
+question and extracts the API token from the HTML. It then uses the
+`/v1/catalog/{country}/apps/{app_id}/reviews` endpoint of the API to fetch the
+app's reviews.
 
-There are two required and one positional parameters:
+[ember]: https://emberjs.com/
 
-- `country` (required)
-  - two-letter country code of [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) standard
-- `app_name` (required)
-  - name of an iOS application to fetch reviews for
-  - also used by `search_id()` method to search for `app_id` internally
-- `app_id` (positional)
-  - can be passed directly
-  - or ignored to be obtained by `search_id` method internally
+### License
 
-Once instantiated, the object can be examined:
-```pycon
->>> minecraft
-AppStore(country='nz', app_name='minecraft', app_id=479516143)
-```
-```pycon
->>> print(app)
-     Country | nz
-        Name | minecraft
-          ID | 479516143
-         URL | https://apps.apple.com/nz/app/minecraft/id479516143
-Review count | 0
-```
+`app-store-web-scraper` is licensed under the Apache License 2.0. See the
+[LICENSE](./LICENSE) file for more details.
 
-Other optional parameters are:
+### Acknowledgements
 
-- `log_format`
-  - passed directly to `logging.basicConfig(format=log_format)`
-  - default is `"%(asctime)s [%(levelname)s] %(name)s - %(message)s"`
-- `log_level`
-  - passed directly to `logging.basicConfig(level=log_level)`
-  - default is `"INFO"`
-- `log_interval`
-  - log is produced every 5 seconds (by default) as a "heartbeat" (useful for a long scraping session)
-  - default is `5`
+This package is a rewrite of [`app-store-scraper`][original] by [Eric
+Lim][eric-lim]. Without his effort, this package would not exist. 💚
 
-
-## Fetching Review
-
-The maximum number of reviews fetched per request is 20. To minimise the number of calls, the limit of 20 is hardcoded. This means the `review()` method will always grab more than the `how_many` argument supplied with an increment of 20.
-
-```pycon
->>> minecraft.review(how_many=33)
->>> minecraft.reviews_count
-40
-```
-
-If `how_many` is not provided, `review()` will terminate after *all* reviews are fetched.
-
-**NOTE** the review count seen on the landing page differs from the actual number of reviews fetched. This is simply because only *some* users who rated the app also leave reviews.
-
-### Optional Parameters
-
-- `after`
-  - a `datetime` object to filter older reviews
-- `sleep`
-  - an `int` to specify seconds to sleep between each call
-
-## Review Data
-
-The fetched review data are loaded in memory and live inside `reviews` attribute as a list of dict.
-```pycon
->>> minecraft.reviews
-[{'userName': 'someone', 'rating': 5, 'date': datetime.datetime(...
-```
-
-Each review dictionary has the following schema:
-```python
-{
-    "date": datetime.datetime,
-    "isEdited": bool,
-    "rating": int,
-    "review": str,
-    "title": str,
-    "userName": str
- }
-```
+[original]: https://pypi.org/project/app-store-scraper/
+[eric-lim]: https://github.com/cowboy-bebug

@@ -3,15 +3,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "app-store-scraper"
+name = "app-store-web-scraper"
 dynamic = ["version"]
 description = "Scrape reviews from Apple's App Store"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 authors = [
-    { name = "Eric Lim" },
     { name = "Denis Washington" },
+    { name = "Eric Lim" },
 ]
 keywords = [
     "app store",
@@ -26,31 +26,51 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Intended Audience :: Developers",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
 ]
 dependencies = [
-    "requests>=2.23.0,<3",
+    "urllib3>=2.0.0,<3",
 ]
 
 [project.urls]
-Homepage = "https://github.com/futurice/app-store-scraper"
-Source = "https://github.com/futurice/app-store-scraper"
+Homepage = "https://github.com/futurice/app-store-web-scraper"
+Source = "https://github.com/futurice/app-store-web-scraper"
 
 [tool.hatch.version]
-path = "app_store_scraper/__version__.py"
+path = "src/app_store_web_scraper/__about__.py"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/app_store_scraper",
-]
+exclude = ["/.github"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_store_web_scraper"]
 
 [tool.hatch.envs.default]
 path = ".venv"
+dependencies = [
+    "black",
+    "faker",
+    "pytest",
+    "pytest-httpserver",
+    "ruff",
+]
+
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+    "faker",
+    "pytest-httpserver",
+  ]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "FA"]
