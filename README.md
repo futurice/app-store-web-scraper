@@ -100,20 +100,42 @@ HTTP connections between requests, which reduces the load on Apple's servers
 and increases performance.
 
 By default, `AppStoreEntry` takes care of creating an `AppStoreSession` itself,
-so you don't need to deal with sessions for simple use cases. However, constructing
-and passing an `AppStoreSession` manually allows you to share a session between
-multiple `AppStoreEntry` objects, to further increase efficiency:
+so you don't need to deal with sessions for simple use cases. However,
+constructing and passing an `AppStoreSession` manually can be beneficial for two
+reasons. First, it allows you to share a session between multiple
+`AppStoreEntry` objects for additional efficiency:
 
 ```python
 from app_store_web_scraper import AppStoreEntry, AppStoreSession
 
 session = AppStoreSession()
-
 pages = AppStoreEntry(app_id=361309726, country="de", session=session)
 numbers = AppStoreEntry(app_id=361304891, country="de", session=session)
 
 # ...
 ```
+
+Second, you can pass several parameters to `AppStoreSession` to control how
+requests to the App Store are handled. For instance:
+
+```python
+session = AppStoreSession(
+  # Wait between 0.4 and 0.6 seconds before every request after the first,
+  # to avoid being rate-limited by Apple's servers
+  delay=0.5,
+  delay_jitter=0.1,
+
+  # Retry failed requests up to 5 times, with an initial backoff time of
+  # 0.5 seconds that doubles after each failed retry (but is capped at 20
+  # seconds)
+  retries=5,
+  retries_backoff_factor=3,
+  retries_backoff_max=20,
+)
+```
+
+For a list of all available parameters with descriptions, see the docstring
+of the `AppStoreSession` class.
 
 [urllib3-pool]: https://urllib3.readthedocs.io/en/stable/reference/urllib3.poolmanager.html
 
@@ -136,6 +158,8 @@ app's reviews.
 
 `app-store-web-scraper` is licensed under the Apache License 2.0. See the
 [LICENSE](./LICENSE) file for more details.
+
+[license]: https://github.com/futurice/app-store-web-scraper/blob/main/LICENCE
 
 ### Acknowledgements
 
