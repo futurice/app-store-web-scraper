@@ -40,6 +40,8 @@ _APP_STORE_CONFIG_TAG_PATTERN = re.compile(
     r'<meta name="web-experience-app/config/environment" content="(.+?)">',
 )
 
+_REVIEWS_PAGE_SIZE = 20
+
 
 class AppStoreEntry:
     """
@@ -75,10 +77,11 @@ class AppStoreEntry:
         params = {
             "platform": "web",
             "additionalPlatforms": "appletv,ipad,iphone,mac",
+            "sort": "-date",
+            "limit": str(min(limit, _REVIEWS_PAGE_SIZE))
+            if limit > 0
+            else str(_REVIEWS_PAGE_SIZE),
         }
-
-        if limit > 0:
-            params["limit"] = str(limit)
 
         query_string = urllib.parse.urlencode(params)
         url = f"{path}?{query_string}"
