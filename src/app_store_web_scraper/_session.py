@@ -78,7 +78,7 @@ class AppStoreSession:
 
         self._made_first_request = False
 
-    def _get_app_page(self, app_id: str | int, country: str) -> str:
+    def _get_app_page(self, app_id: int, country: str) -> str:
         self._apply_delay()
         url = urljoin(self._web_base_url, f"/{country}/app/_/id{app_id}")
 

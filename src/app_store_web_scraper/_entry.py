@@ -55,8 +55,8 @@ class AppStoreEntry:
         *,
         session: AppStoreSession | None = None,
     ):
-        self.app_id = app_id
-        self.country = country
+        self.app_id = int(app_id)
+        self.country = country.lower()
         self._session = session or AppStoreSession()
 
         page = self._session._get_app_page(app_id, country)
