@@ -46,6 +46,23 @@ _REVIEWS_PAGE_SIZE = 20
 class AppStoreEntry:
     """
     Represents an app in the app store.
+
+    :param app_id:
+        ID of the app in the App Store. It can be found in the last path
+        segment of the app's App Store URL (remove the "id" prefix).
+
+    :param country:
+        Two-letter ISO code of the country where the app should be looked up.
+        Both lowercase ("de") and uppercase ("FI") codes are accepted. The
+        :meth:`reviews` method will only return reviews from users of that
+        country.
+
+    :param session:
+        The :class:`AppStoreSession` to use for communicating with the App
+        Store. If not specified, a new session is created internally. Use
+        this option to share the same session between entries to increase
+        efficiency (by using a shared HTTP connection pool) or to pass a
+        session with custom configuration parameters.
     """
 
     def __init__(
@@ -64,13 +81,24 @@ class AppStoreEntry:
 
     def reviews(self, limit: int = 0) -> Iterator[AppReview]:
         """
-        Fetch app reviews from the App Store and return them as an iterator.
+        Return an iterator that fetches app reviews from the App Store.
 
         As the list of reviews is paginated, iterating over all reviews
         triggers an additional HTTP request to the App Store's backend whenever
         a new page needs to be fetched. For this reason, it is possible that
         the iterator raises an error even after some reviews were already
         returned.
+
+        Note that only reviews from the App Store entry's country are returned.
+        Also, the App Store's API only returns a subset of all reviews ever
+        given to the app, so it is normal that the numer of retrieved reviews
+        does not match the review count on the App Store page.
+
+        :param limit:
+            The maximum number of reviews to return.
+
+        :return:
+            An iterator that lazily fetches the app's reviews.
         """
         path = f"/v1/catalog/{self.country}/apps/{self.app_id}/reviews"
 
