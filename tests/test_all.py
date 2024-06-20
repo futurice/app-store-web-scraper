@@ -132,7 +132,7 @@ def test_reviews_limit(httpserver: HTTPServer, faker: Faker, session: AppStoreSe
     assert retrieved_reviews == reviews[:limit]
 
 
-def test_app_not_found(httpserver: HTTPServer, faker: Faker, session: AppStoreSession):
+def test_app_not_found(httpserver: HTTPServer, session: AppStoreSession):
     mock_app_store_page_not_found(httpserver)
 
     with pytest.raises(AppNotFound):
