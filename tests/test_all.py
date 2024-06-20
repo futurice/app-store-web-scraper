@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import timezone
 import json
 import urllib.parse
 
@@ -14,6 +15,19 @@ STORE_PAGE_PATH = f"/{COUNTRY}/app/_/id{APP_ID}"
 REVIEWS_API_PATH = f"/v1/catalog/{COUNTRY}/apps/{APP_ID}/reviews"
 
 API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+
+def fake_app_review(faker: Faker):
+    return AppReview(
+        id=faker.unique.random_int(min=0, max=2**32),
+        date=faker.past_datetime(tzinfo=timezone.utc),
+        user_name=faker.user_name(),
+        title=" ".join(faker.words(3)),
+        review=" ".join(faker.sentences(2)),
+        rating=faker.random_int(min=1, max=5),
+        is_edited=faker.boolean(),
+        developer_response=None,
+    )
 
 
 def mock_app_store_page(httpserver: HTTPServer):
@@ -68,7 +82,7 @@ def mock_app_reviews(
                         {
                             "id": review.id,
                             "attributes": {
-                                "date": review.date.isoformat(),
+                                "date": review.date.isoformat().replace("+00:00", "Z"),
                                 "userName": review.user_name,
                                 "title": review.title,
                                 "review": review.review,
@@ -83,19 +97,6 @@ def mock_app_reviews(
         )
 
     httpserver.expect_request(path).respond_with_handler(request_handler)
-
-
-def fake_app_review(faker: Faker):
-    return AppReview(
-        id=faker.unique.random_int(min=0, max=2**32),
-        date=faker.past_datetime(),
-        user_name=faker.user_name(),
-        title=" ".join(faker.words(3)),
-        review=" ".join(faker.sentences(2)),
-        rating=faker.random_int(min=1, max=5),
-        is_edited=faker.boolean(),
-        developer_response=None,
-    )
 
 
 @pytest.fixture

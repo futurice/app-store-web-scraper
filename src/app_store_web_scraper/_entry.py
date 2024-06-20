@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app_store_web_scraper._session import AppStoreError, AppStoreSession
+from app_store_web_scraper._utils import fromisoformat_utc
 
 
 @dataclass
@@ -106,9 +107,11 @@ class AppStoreEntry:
             "platform": "web",
             "additionalPlatforms": "appletv,ipad,iphone,mac",
             "sort": "-date",
-            "limit": str(min(limit, _REVIEWS_PAGE_SIZE))
-            if limit > 0
-            else str(_REVIEWS_PAGE_SIZE),
+            "limit": (
+                str(min(limit, _REVIEWS_PAGE_SIZE))
+                if limit > 0
+                else str(_REVIEWS_PAGE_SIZE)
+            ),
         }
 
         query_string = urllib.parse.urlencode(params)
@@ -149,7 +152,7 @@ class AppStoreEntry:
 
         return AppReview(
             id=review_id,
-            date=datetime.fromisoformat(attributes["date"]),
+            date=fromisoformat_utc(attributes["date"]),
             user_name=attributes["userName"],
             title=attributes["title"],
             review=attributes["review"],
@@ -159,7 +162,7 @@ class AppStoreEntry:
                 AppDeveloperResponse(
                     id=dev_response["id"],
                     body=dev_response["body"],
-                    modified=datetime.fromisoformat(dev_response["modified"]),
+                    modified=fromisoformat_utc(dev_response["modified"]),
                 )
                 if dev_response
                 else None
