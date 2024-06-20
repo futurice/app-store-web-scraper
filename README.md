@@ -55,7 +55,7 @@ from which one can extract the app ID `1174039276`.
 
 [apple]: https://www.apple.com/
 
-### `AppStoreEntry`
+### App Store Entries
 
 To start scraping an app in the App Store, create an `AppStoreEntry` instance
 with an app ID and the (lowercase) ISO code of the country whose App Store
@@ -68,7 +68,7 @@ Note that this is usually only a small subset of all reviews that the app
 received, so the number of reviews retrieved will not match the review count
 displayed on the App Store page.
 
-### `AppReview`
+### App Reviews
 
 Each review is returned as an `AppReview` object with the following attributes:
 
@@ -92,7 +92,7 @@ the iterator. By default, no limit is set.
 
 ## Advanced Usage
 
-### `AppStoreSession`
+### Sessions
 
 The `AppStoreSession` class implements the communication with the App Store's
 servers. Internally, it uses an [`urllib3.PoolManager`][urllib3-pool] the reuse
@@ -139,7 +139,7 @@ of the `AppStoreSession` class.
 
 [urllib3-pool]: https://urllib3.readthedocs.io/en/stable/reference/urllib3.poolmanager.html
 
-### How It Works
+## How It Works
 
 The App Store Preview on the web (`https://apps.apple.com/...`) is implemented
 as a single-page application based on [Ember.js][ember]. It fetches all data
@@ -154,14 +154,14 @@ app's reviews.
 
 [ember]: https://emberjs.com/
 
-### License
+## License
 
 `app-store-web-scraper` is licensed under the Apache License 2.0. See the
 [LICENSE](./LICENSE) file for more details.
 
 [license]: https://github.com/futurice/app-store-web-scraper/blob/main/LICENCE
 
-### Acknowledgements
+## Acknowledgements
 
 This package is a rewrite of [`app-store-scraper`][original] by [Eric
 Lim][eric-lim]. Without his effort, this package would not exist. 💚
