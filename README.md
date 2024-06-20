@@ -2,9 +2,21 @@
 
 `app-store-web-scraper` is a Python package for extracting reviews for iOS,
 iPadOS, macOS and tvOS apps from the web version of Apple's App Store.
+
 > __Note:__ Whenever possible, prefer using Apple's [App Store Connect
 > API][connect], which provides the full set of customer review data for your
 > apps and is more reliable.
+
+* [Installation](#installation)
+* [Basic Usage](#basic-usage)
+    * [App IDs](#app-ids)
+    * [App Store Entries](#app-store-entries)
+    * [App Reviews](#app-reviews)
+* [Advanced Usage](#advanced-usage)
+    * [Sessions](#sessions)
+* [How It Works](#how-it-works)
+* [License](#license)
+* [Acknowledgements](#acknowledgements)
 
 [connect]: https://developer.apple.com/app-store-connect/api/
 
