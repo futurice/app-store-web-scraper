@@ -50,16 +50,14 @@ class AppStoreSession:
         retry backoff time.
     """
 
-    _web_base_url = "https://apps.apple.com"
-    _api_base_url = "https://amp-api-edge.apps.apple.com"
-    _user_agent = f"app-store-web-scraper/{__version__}"
+    _itunes_rss_base_url = "https://itunes.apple.com"
 
     def __init__(
         self,
-        delay: float = 0.2,
-        delay_jitter: float = 0.05,
-        retries: int = 4,
-        retries_backoff_factor: float = 2,
+        delay: float = 0,
+        delay_jitter: float = 0,
+        retries: int = 3,
+        retries_backoff_factor: float = 1,
         retries_backoff_jitter: float = 0,
         retries_backoff_max: float = 60,
     ):
@@ -76,63 +74,30 @@ class AppStoreSession:
             )
         )
 
+        self._user_agent = f"app-store-web-scraper/{__version__}"
         self._made_first_request = False
 
-    def _get_app_page(self, app_id: int, country: str) -> str:
-        self._apply_delay()
-        url = urljoin(self._web_base_url, f"/{country}/app/_/id{app_id}")
+    def _get_itunes_rss_json(self, path: str) -> dict:
+        if not path.startswith("/"):
+            raise ValueError("Path must not be relative or a full URL")
 
-        response = self._http.request(
-            "GET",
-            url,
-            headers={
-                "Origin": self._web_base_url,
-                "User-Agent": self._user_agent,
-            },
-        )
-
-        self._made_first_request = True
-
-        if response.status == 404:
-            raise AppNotFound(app_id, country)
-        elif response.status >= 400:
-            raise AppStoreError(
-                f"Fetching App Store page failed with status {response.status} ({url})"
-            )
-
-        return response.data.decode()
-
-    def _get_api_resource(
-        self,
-        url: str,
-        *,
-        access_token: str,
-        params: dict[str, str] | None = None,
-    ) -> Any:
-        self._apply_delay()
-        full_url = urljoin(self._api_base_url, url)
-
-        response = self._http.request(
-            "GET",
-            full_url,
-            fields=params,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Origin": self._web_base_url,
-                "User-Agent": self._user_agent,
-            },
-        )
-
-        self._made_first_request = True
+        feed_url = urljoin(self._itunes_rss_base_url, path)
+        response = self._get(feed_url)
 
         if response.status >= 400:
             raise AppStoreError(
-                f"App Store API request failed with status {response.status} (GET {full_url})"
+                f"Fetching iTunes Store RSS feed failed with status {response.status}",
             )
 
         return response.json()
 
-    def _apply_delay(self):
+    def _get(self, url: str):
         if self._delay > 0 and self._made_first_request:
             jitter = random.uniform(0, self._delay_jitter)
             time.sleep(self._delay + jitter)
+
+        return self._http.request(
+            "GET",
+            url,
+            headers={"User-Agent": self._user_agent},
+        )

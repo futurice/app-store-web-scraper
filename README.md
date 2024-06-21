@@ -44,11 +44,11 @@ MINECRAFT_APP_ID = 479516143
 app = AppStoreEntry(app_id=MINECRAFT_APP_ID, country="gb")
 
 # Iterate over the app's reviews, which are fetched lazily in batches.
-for review in app.reviews(limit=10):
+for review in app.reviews():
     print("-----")
     print("ID:", review.id)
     print("Rating:", review.rating)
-    print("Review:", review.review)
+    print("Review:", review.content)
 ```
 
 [minecraft]: https://apps.apple.com/gb/app/multicraft-build-and-mine/id1174039276
@@ -153,18 +153,7 @@ of the `AppStoreSession` class.
 
 ## How It Works
 
-The App Store Preview on the web (`https://apps.apple.com/...`) is implemented
-as a single-page application based on [Ember.js][ember]. It fetches all data
-from an API at `https://amp-api-edge.apps.apple.com/v1`. The authentication
-token for this API is delivered to the web app in the form of a `<meta>` HTML
-tag that is embedded into the initial HTML content of the page.
-
-`app-store-web-scraper` first requests the App Store page of the app in
-question and extracts the API token from the HTML. It then uses the
-`/v1/catalog/{country}/apps/{app_id}/reviews` endpoint of the API to fetch the
-app's reviews.
-
-[ember]: https://emberjs.com/
+TODO: Rewrite
 
 ## License
 
