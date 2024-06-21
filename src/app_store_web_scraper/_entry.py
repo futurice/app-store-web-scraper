@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
+import warnings
 
 from app_store_web_scraper._errors import AppNotFound
 from app_store_web_scraper._session import AppStoreSession
@@ -27,6 +28,11 @@ class AppReview:
         """
         An alias for ``content``, provided for backwards compatibility.
         """
+        warnings.warn(
+            "'AppReview.review' is deprecated, use 'content' instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         return self.content
 
 
