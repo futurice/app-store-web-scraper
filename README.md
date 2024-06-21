@@ -44,11 +44,11 @@ MINECRAFT_APP_ID = 479516143
 app = AppStoreEntry(app_id=MINECRAFT_APP_ID, country="gb")
 
 # Iterate over the app's reviews, which are fetched lazily in batches.
-for review in app.reviews(limit=10):
+for review in app.reviews():
     print("-----")
     print("ID:", review.id)
     print("Rating:", review.rating)
-    print("Review:", review.review)
+    print("Review:", review.content)
 ```
 
 [minecraft]: https://apps.apple.com/gb/app/multicraft-build-and-mine/id1174039276
@@ -153,30 +153,34 @@ of the `AppStoreSession` class.
 
 ## How It Works
 
-The App Store Preview on the web (`https://apps.apple.com/...`) is implemented
-as a single-page application based on [Ember.js][ember]. It fetches all data
-from an API at `https://amp-api-edge.apps.apple.com/v1`. The authentication
-token for this API is delivered to the web app in the form of a `<meta>` HTML
-tag that is embedded into the initial HTML content of the page.
+To fetch app reviews, this library uses the undocumented iTunes Customer Reviews
+API, which offers the following endpoint to retrieve the pages of an app's
+reviews feed in JSON format:
 
-`app-store-web-scraper` first requests the App Store page of the app in
-question and extracts the API token from the HTML. It then uses the
-`/v1/catalog/{country}/apps/{app_id}/reviews` endpoint of the API to fetch the
-app's reviews.
+```
+https://itunes.apple.com/{country}/rss/customerreviews/page={page}/id={app_id}/sortby=mostrecent/json
+```
 
-[ember]: https://emberjs.com/
+`app_id` and `country` are the respective values passed to the `AppStoreEntry`.
+`page` is a number between 1 and 10 (the highest allowed page number).  Each
+page contains up to 50 reviews, which results in the maximum number of 500
+reviews per app ID and country.
 
 ## License
 
-`app-store-web-scraper` is licensed under the Apache License 2.0. See the
-[LICENSE](./LICENSE) file for more details.
+`app-store-web-scraper` is licensed under the Apache License, Version 2.0.
+See the [LICENSE](./LICENSE) file for more details.
 
 [license]: https://github.com/futurice/app-store-web-scraper/blob/main/LICENCE
 
 ## Acknowledgements
 
-This package is a rewrite of [`app-store-scraper`][original] by [Eric
-Lim][eric-lim]. Without his effort, this package would not exist. 💚
+This library is a rewrite of [`app-store-scraper`][original] by [Eric
+Lim][eric-lim] and takes further inspiration from the [Node.js package of the
+same name][npm-package] by [Facundo Olando][facundo-olando]. Without these
+authors' efforts, this library would not exist. 💚
 
 [original]: https://pypi.org/project/app-store-scraper/
+[npm-package]: https://www.npmjs.com/package/app-store-scraper
 [eric-lim]: https://github.com/cowboy-bebug
+[facundo-olando]: https://github.com/facundoolano

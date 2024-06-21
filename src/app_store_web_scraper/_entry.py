@@ -1,27 +1,14 @@
 from __future__ import annotations
-import json
-import re
-import urllib.parse
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 
-from app_store_web_scraper._session import AppStoreError, AppStoreSession
+from app_store_web_scraper._errors import AppNotFound
+from app_store_web_scraper._session import AppStoreSession
 from app_store_web_scraper._utils import fromisoformat_utc
 
 
-@dataclass
-class AppDeveloperResponse:
-    """
-    An app developer's response to an app review.
-    """
-
-    id: int
-    body: str
-    modified: datetime
-
-
-@dataclass
+@dataclass(frozen=True)
 class AppReview:
     """
     A user review fetched from the App Store.
@@ -31,17 +18,16 @@ class AppReview:
     date: datetime
     user_name: str
     title: str
-    review: str
+    content: str
     rating: int
-    is_edited: bool
-    developer_response: AppDeveloperResponse | None
+    app_version: str
 
-
-_APP_STORE_CONFIG_TAG_PATTERN = re.compile(
-    r'<meta name="web-experience-app/config/environment" content="(.+?)">',
-)
-
-_REVIEWS_PAGE_SIZE = 20
+    @property
+    def review(self) -> str:
+        """
+        An alias for ``content``, provided for backwards compatibility.
+        """
+        return self.content
 
 
 class AppStoreEntry:
@@ -66,6 +52,21 @@ class AppStoreEntry:
         session with custom configuration parameters.
     """
 
+    MAX_REVIEWS_LIMIT = 500
+    """
+    The maximum number of app reviews that can be retrieved for an App Store
+    entry. (This limit is imposed by the iTunes Store RSS API.)
+
+    NOTE: The limit is per country, so for apps available in multiple countries,
+    it is possible to create one ``AppStoreEntry`` per country and retrieve a
+    total maximum of ``MAX_REVIEWS_LIMIT * NUMBER_OF_COUNTRIES`` reviews.
+    """
+
+    _REVIEWS_FEED_PAGE_LIMIT = 10
+    """
+    The maximum amount of pages that an iTunes Store RSS reviews feed returns.
+    """
+
     def __init__(
         self,
         app_id: str | int,
@@ -77,10 +78,7 @@ class AppStoreEntry:
         self.country = country.lower()
         self._session = session or AppStoreSession()
 
-        page = self._session._get_app_page(app_id, country)
-        self._api_access_token = self._extract_api_access_token(page)
-
-    def reviews(self, limit: int = 0) -> Iterator[AppReview]:
+    def reviews(self, limit: int = MAX_REVIEWS_LIMIT) -> Iterator[AppReview]:
         """
         Return an iterator that fetches app reviews from the App Store.
 
@@ -101,70 +99,57 @@ class AppStoreEntry:
         :return:
             An iterator that lazily fetches the app's reviews.
         """
-        path = f"/v1/catalog/{self.country}/apps/{self.app_id}/reviews"
+        if limit <= 0:
+            raise ValueError("Limit must be positive")
 
-        params = {
-            "platform": "web",
-            "additionalPlatforms": "appletv,ipad,iphone,mac",
-            "sort": "-date",
-            "limit": (
-                str(min(limit, _REVIEWS_PAGE_SIZE))
-                if limit > 0
-                else str(_REVIEWS_PAGE_SIZE)
-            ),
-        }
+        limit = min(limit, self.MAX_REVIEWS_LIMIT)
+        count = 0
 
-        query_string = urllib.parse.urlencode(params)
-        url = f"{path}?{query_string}"
-        review_count = 0
+        for page in range(1, self._REVIEWS_FEED_PAGE_LIMIT + 1):
+            path = f"/{self.country}/rss/customerreviews/page={page}/id={self.app_id}/sortby=mostrecent/json"
+            data = self._session._get(path)
+            feed = data["feed"]
 
-        while url:
-            reviews = self._session._get_api_resource(
-                url,
-                access_token=self._api_access_token,
-            )
+            # Requesting reviews for an unknown app ID does not result in
+            # a 404 response. However, the returned feed's "link" array
+            # will not contain a link of type "self" in this case.
+            app_exists = False
+            for link in feed["link"]:
+                if link["attributes"]["rel"] == "self":
+                    app_exists = True
 
-            for item in reviews["data"]:
-                yield self._parse_app_review(item)
-                review_count += 1
-                if limit > 0 and review_count == limit:
+            if not app_exists:
+                raise AppNotFound(self.app_id, self.country)
+
+            if "entry" not in feed:
+                # There are no more reviews to retrieve
+                return
+
+            for entry in feed["entry"]:
+                yield self._parse_review_entry(entry)
+                count += 1
+                if count == limit:
                     return
 
-            # The "next" URL returned by the API is unfortunately not
-            # complete: it adds an appropriate `offset` query parameter
-            # to the previous URL, but drops all other parameters. We
-            # need to re-add them manually as otherwise we'd get a
-            # 400 response.
-            url = reviews.get("next")
-            if url:
-                url = f"{url}&{query_string}"
-
-    def _extract_api_access_token(self, page_html: str) -> str:
-        if match := re.search(_APP_STORE_CONFIG_TAG_PATTERN, page_html):
-            config = json.loads(urllib.parse.unquote(match[1]))
-            return config["MEDIA_API"]["token"]
-        raise AppStoreError("No API token found on app store page")
-
     def _parse_app_review(self, item: dict) -> AppReview:
-        review_id = item["id"]
         attributes = item["attributes"]
-        dev_response = attributes.get("developerResponse")
-
         return AppReview(
-            id=review_id,
+            id=item["id"],
             date=fromisoformat_utc(attributes["date"]),
             user_name=attributes["userName"],
             title=attributes["title"],
-            review=attributes["review"],
+            content=attributes["review"],
             rating=attributes["rating"],
-            is_edited=attributes["isEdited"],
-            developer_response=(
-                AppDeveloperResponse(
-                    id=dev_response["id"],
-                    body=dev_response["body"],
-                    modified=fromisoformat_utc(dev_response["modified"]),
-                )
-                if dev_response
-                else None
-            ),
+            app_version="",
+        )
+
+    def _parse_review_entry(self, entry: dict) -> AppReview:
+        return AppReview(
+            id=int(entry["id"]["label"]),
+            date=fromisoformat_utc(entry["updated"]["label"]),
+            user_name=entry["author"]["name"]["label"],
+            title=entry["title"]["label"],
+            content=entry["content"]["label"],
+            rating=int(entry["im:rating"]["label"]),
+            app_version=entry["im:version"]["label"],
         )
