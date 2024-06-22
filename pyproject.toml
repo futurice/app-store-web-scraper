@@ -56,19 +56,13 @@ packages = ["src/app_store_web_scraper"]
 [tool.hatch.envs.default]
 path = ".venv"
 dependencies = [
-    "black",
-    "faker",
-    "pre-commit",
-    "pytest",
-    "pytest-httpserver",
-    "ruff",
+    "black==24.4.2",
+    "faker==25.9.1",
+    "pre-commit==3.7.1",
+    "pytest==8.2.2",
+    "pytest-httpserver==1.0.10",
+    "ruff==0.4.10",
 ]
-
-[tool.hatch.envs.hatch-test]
-extra-dependencies = [
-    "faker",
-    "pytest-httpserver",
-  ]
 
 [tool.ruff]
 line-length = 88
