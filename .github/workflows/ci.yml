@@ -31,8 +31,11 @@ jobs:
       - name: Set up Python environment
         run: hatch env create
 
-      - name: Check code and formatting
+      - name: Lint and check formatting
         run: hatch fmt --check
+
+      - name: Check types
+        run: hatch run mypy .
 
       - name: Run unit tests
         run: hatch test
