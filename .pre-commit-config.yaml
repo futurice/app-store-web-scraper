@@ -1,0 +1,16 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check
+        name: format
+        entry: hatch fmt --check
+        language: system
+        types: [python]
+        verbose: true
+      - id: test
+        name: test
+        entry: hatch test
+        language: system
+        types: [python]
+        verbose: true
+        pass_filenames: false

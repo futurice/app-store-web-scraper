@@ -58,6 +58,7 @@ path = ".venv"
 dependencies = [
     "black",
     "faker",
+    "pre-commit",
     "pytest",
     "pytest-httpserver",
     "ruff",
