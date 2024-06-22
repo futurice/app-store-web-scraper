@@ -175,7 +175,7 @@ See the [LICENSE](./LICENSE) file for more details.
 
 ## Acknowledgements
 
-This library is a rewrite of [`app-store-scraper`][original] by [Eric
+This library is a fork and rewrite of [`app-store-scraper`][original] by [Eric
 Lim][eric-lim] and takes further inspiration from the [Node.js package of the
 same name][npm-package] by [Facundo Olando][facundo-olando]. Without these
 authors' efforts, this library would not exist. 💚
