@@ -65,6 +65,9 @@ dependencies = [
     "ruff==0.4.10",
 ]
 
+[tool.hatch.envs.hatch-test]
+template = "default"
+
 [tool.mypy]
 exclude = [".venv"]
 
