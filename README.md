@@ -1,5 +1,7 @@
 # 🍏🔍 App Store Web Scraper
 
+![PyPI - Version](https://img.shields.io/pypi/v/app-store-web-scraper)
+
 `app-store-web-scraper` is a Python package for extracting reviews for iOS,
 iPadOS, macOS and tvOS apps from the web version of Apple's App Store.
 
